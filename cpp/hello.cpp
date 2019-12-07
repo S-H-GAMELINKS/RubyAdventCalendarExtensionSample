@@ -8,20 +8,24 @@ class Hello {
         void say() { std::cout << "Hello Ruby Extension!" << std::endl; };
 };
 
+struct WrapHello {
+    Hello* hello;
+};
+
 static Hello* get_hello(VALUE self) {
-    Hello *ptr;
-    Data_Get_Struct(self, Hello, ptr);
-    return ptr;
+    WrapHello *ptr;
+    Data_Get_Struct(self, WrapHello, ptr);
+    return ptr->hello;
 }
 
-static void wrap_hello_free(Hello *ptr) {
-    ptr->~Hello();
+static void wrap_hello_free(WrapHello *ptr) {
+    delete ptr->hello;
     ruby_xfree(ptr);
 }
 
 static VALUE wrap_hello_alloc(VALUE klass) {
-    void *ptr = ruby_xmalloc(sizeof(Hello));
-    ptr = std::move(new(Hello));
+    auto *ptr = RB_ALLOC(WrapHello);
+    ptr->hello = new(Hello);
     return Data_Wrap_Struct(klass, NULL, wrap_hello_free, ptr);
 }
 
